@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"io"
 	"os"
@@ -29,6 +30,27 @@ func setupTracer(service string) (opentracing.Tracer, io.Closer) {
 	return tracer, closer
 }
 
+func formatString(ctx context.Context, str string) string {
+	span, _ := opentracing.StartSpanFromContext(ctx, "format-string")
+	defer span.Finish()
+
+	fullStr := fmt.Sprintf("Full-hello %s!", str)
+	span.LogFields(
+		log.String("event", "string-formmated"),
+		log.String("value", fullStr),
+	)
+
+	return fullStr
+}
+
+func printString(ctx context.Context, str string) {
+	span, _ := opentracing.StartSpanFromContext(ctx, "printHello")
+	defer span.Finish()
+
+	fmt.Println(str)
+	span.LogKV("event", "printlnn")
+}
+
 func main() {
 	if len(os.Args) != 2 {
 		panic("ERROR: Expecting one argument")
@@ -36,20 +58,17 @@ func main() {
 
 	tracer, closer := setupTracer("frontend!")
 	defer closer.Close()
+	opentracing.SetGlobalTracer(tracer)
 
 	ht := os.Args[1]
 
 	span := tracer.StartSpan("hello-function")
+	span.SetTag("hello-to", ht)
 	defer span.Finish()
 
-	span.SetTag("hello-to", ht)
+	ctx := context.Background()
+	ctx = opentracing.ContextWithSpan(ctx, span)
 
-	fullStr := fmt.Sprintf("Full-hello %s!", ht)
-	span.LogFields(
-		log.String("event", "string-formmated"),
-		log.String("value", fullStr),
-	)
-
-	fmt.Println("fullStr")
-	span.LogKV("event", "println")
+	str := formatString(ctx, ht)
+	printString(ctx, str)
 }
