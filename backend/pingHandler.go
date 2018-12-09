@@ -3,14 +3,11 @@ package main
 import (
 	"jaeger-opentracing-tut/lib/client"
 	"net/http"
-
-	opentracing "github.com/opentracing/opentracing-go"
 )
 
-func pingHandler(t opentracing.Tracer) func(w http.ResponseWriter, r *http.Request) {
-	tracer := t
+func pingHandler() func(w http.ResponseWriter, r *http.Request) {
 	return func(w http.ResponseWriter, r *http.Request) {
-		ctx, span := client.ContextFromHTTP(tracer, "pinging", r)
+		ctx, span := client.ContextFromHTTP("pinging", r)
 		defer span.Finish()
 
 		client.PingService(ctx, "http://0.0.0.0:3002/ping", "ping-backend-repo")

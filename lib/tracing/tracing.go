@@ -17,9 +17,10 @@ func New(service string) (opentracing.Tracer, io.Closer) {
 		Reporter: &config.ReporterConfig{
 			LogSpans: true,
 		},
+		ServiceName: service,
 	}
 
-	tracer, closer, err := cfg.New(service, config.Logger(jaeger.StdLogger))
+	tracer, closer, err := cfg.NewTracer(config.Logger(jaeger.StdLogger))
 	if err != nil {
 		panic(err)
 	}

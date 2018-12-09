@@ -35,15 +35,15 @@ func PingService(ctx context.Context, url, str string) {
 	}
 }
 
-func ContextFromHTTP(tracer opentracing.Tracer, name string, r *http.Request) (context.Context, opentracing.Span) {
-	wireCtx, err := tracer.Extract(
+func ContextFromHTTP(name string, r *http.Request) (context.Context, opentracing.Span) {
+	wireCtx, err := opentracing.GlobalTracer().Extract(
 		opentracing.HTTPHeaders,
 		opentracing.HTTPHeadersCarrier(r.Header),
 	)
 	if err != nil {
 		panic(err)
 	}
-	serverSpan := tracer.StartSpan(
+	serverSpan := opentracing.StartSpan(
 		"pinging",
 		ext.RPCServerOption(wireCtx),
 	)
