@@ -7,10 +7,10 @@ import (
 )
 
 func main() {
-	tracer, closer := tracing.New("backend")
+	tracer, closer := tracing.New("backend-repo")
 	defer closer.Close()
 
 	http.HandleFunc("/ping", pingHandler(tracer))
 
-	log.Fatal(http.ListenAndServe(":3001", nil))
+	log.Fatal(http.ListenAndServe(":3002", nil))
 }

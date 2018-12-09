@@ -9,8 +9,10 @@ import (
 )
 
 func PingService(ctx context.Context, url, str string) {
-	span, _ := opentracing.StartSpanFromContext(ctx, "printHello")
-	defer span.Finish()
+	span := opentracing.SpanFromContext(ctx)
+	if span == nil {
+		panic("no span in PingService, gotta make a new one")
+	}
 
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
@@ -21,6 +23,7 @@ func PingService(ctx context.Context, url, str string) {
 	ext.SpanKindRPCClient.Set(span)
 	ext.HTTPUrl.Set(span, url)
 	ext.HTTPMethod.Set(span, "GET")
+
 	span.Tracer().Inject(
 		span.Context(),
 		opentracing.HTTPHeaders,
@@ -30,4 +33,21 @@ func PingService(ctx context.Context, url, str string) {
 	if _, err := client.Do(req); err != nil {
 		panic(err.Error())
 	}
+}
+
+func ContextFromHTTP(tracer opentracing.Tracer, name string, r *http.Request) (context.Context, opentracing.Span) {
+	wireCtx, err := tracer.Extract(
+		opentracing.HTTPHeaders,
+		opentracing.HTTPHeadersCarrier(r.Header),
+	)
+	if err != nil {
+		panic(err)
+	}
+	serverSpan := tracer.StartSpan(
+		"pinging",
+		ext.RPCServerOption(wireCtx),
+	)
+	ctx := opentracing.ContextWithSpan(context.Background(), serverSpan)
+
+	return ctx, serverSpan
 }
